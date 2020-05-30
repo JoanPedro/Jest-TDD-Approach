@@ -1,8 +1,8 @@
 import request from 'supertest';
 import bcrypt from 'bcryptjs';
 import app from '../../src/app';
-import User from '../../src/app/models/User';
 
+import factory from '../factory-girl';
 import truncate from '../utils/truncate';
 
 describe('User', () => {
@@ -11,10 +11,9 @@ describe('User', () => {
   });
 
   it('Sould encrypt user password when new user created.', async () => {
-    const user = await User.create({
-      name: 'Joan Pedro Oliveira de Souza',
-      email: 'joan.pedro@email.com',
-      password: '1r12rjojf',
+    const user = await factory.create('User', {
+      password: '1r12rjojf', // Como é uma comparação de senha, não deixar o factory
+      // gerar uma senha aleatória.
     });
 
     const compareHash = await bcrypt.compare('1r12rjojf', user.password_hash);
@@ -23,33 +22,25 @@ describe('User', () => {
   });
 
   it('Should be able to register.', async () => {
+    const user = await factory.attrs('User'); // Retorna atributos aleatórios do Model
+
     const response = await request(app)
       .post('/users')
-      .send({
-        name: 'Joan Pedro Oliveira de Souza',
-        email: 'joan.pedro@email.com',
-        password: '1r12rjojf',
-      });
+      .send(user);
 
     expect(response.body).toHaveProperty('id');
   });
 
   it('Should not be able to register with duplicated email.', async () => {
+    const user = await factory.attrs('User');
+
     await request(app)
       .post('/users')
-      .send({
-        name: 'Joan Pedro Oliveira de Souza',
-        email: 'joan.pedro@email.com',
-        password: '1r12rjojf',
-      });
+      .send(user);
 
     const response = await request(app)
       .post('/users')
-      .send({
-        name: 'Joan Pedro Oliveira de Souza',
-        email: 'joan.pedro@email.com',
-        password: '1r12rjojf',
-      });
+      .send(user);
 
     expect(response.status).toBe(400);
   });
